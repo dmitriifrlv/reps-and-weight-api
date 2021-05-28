@@ -35,7 +35,6 @@ app.get('/add-user', (req, res)=>{
 })
 
 app.post('/signup', (req, res)=>{
-  console.log(req.body)
   const {email, password} = req.body
   const user = new User({
     email, password
@@ -43,7 +42,7 @@ app.post('/signup', (req, res)=>{
   console.log(user)
   user.save()
   .then((result)=>{
-    res.send(result)
+    res.json(result)
   })
   .catch((err)=>{
     console.log(err)
