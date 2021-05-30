@@ -5,9 +5,15 @@ const User = require('./models/user')
 const cors = require('cors');
 const app = express()
 const jwt = require('jsonwebtoken')
+const path = require('path');
 app.use(cors());
 app.use(express.urlencoded({extended: true})); 
 app.use(express.json()); 
+app.use(express.static(path.join(__dirname, 'build')));
+
+app.get('/', function (req, res) {
+  res.sendFile(path.join(__dirname, 'build', 'index.html'));
+});
 
 const dbURI = process.env.dbURI
 mongoose.connect(dbURI, { useNewUrlParser: true, useUnifiedTopology: true, useCreateIndex: true })
@@ -16,7 +22,9 @@ mongoose.connect(dbURI, { useNewUrlParser: true, useUnifiedTopology: true, useCr
     console.log('connected to db')
   })
   .catch((err)=>console.log(err))
-app.get('/', (req, res)=>{
+
+
+  app.get('/', (req, res)=>{
   res.send('hello there!')
 })
 
