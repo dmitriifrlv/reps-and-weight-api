@@ -4,7 +4,7 @@ const mongoose = require('mongoose')
 const User = require('./models/user')
 const cors = require('cors');
 const app = express()
-
+const jwt = require('jsonwebtoken')
 app.use(cors());
 app.use(express.urlencoded({extended: true})); 
 app.use(express.json()); 
@@ -17,7 +17,7 @@ mongoose.connect(dbURI, { useNewUrlParser: true, useUnifiedTopology: true, useCr
   })
   .catch((err)=>console.log(err))
 app.get('/', (req, res)=>{
-  res.send('hello there')
+  res.send('hello there!')
 })
 
 app.get('/add-user', (req, res)=>{
@@ -48,12 +48,17 @@ app.post('/signup', (req, res)=>{
     console.log(err)
   })
 })
-
+const jwtsecret = "secret"
 app.post('/login', async (req, res)=>{
   const {email, password} = req.body
   const user = await User.findOne({email:email})
   if(user.password === password) {
-    res.json(user)
+    res.json(
+      {
+        user,
+        token:jwt.sign({_id: user._id}, jwtsecret)
+      }
+    )
   } else {
     res.status(400).json('wrong password')
   }
