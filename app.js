@@ -148,11 +148,11 @@ app.delete('/users/:userId/workouts/:workoutId', async (req, res)=>{
   const user = await User.findById(req.params.userId)
   user.workouts.id(req.params.workoutId).remove()
   console.log(user.workouts.id(req.params.workoutId))
-  res.send(user)
   user.save(function(err){
     if (err) return console.log('fuck')
     console.log('workout succesfully deleted!')
   })
+  res.send(user)
 })
 //delete an exercise
 app.delete('/users/:userId/workouts/:workoutId/exercise/:exerciseId', async (req, res)=>{
