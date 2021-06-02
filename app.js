@@ -147,6 +147,8 @@ app.post('/users/:userId/workouts/:workoutId', async (req, res)=>{
 app.delete('/users/:userId/workouts/:workoutId', async (req, res)=>{
   const user = await User.findById(req.params.userId)
   user.workouts.id(req.params.workoutId).remove()
+  console.log(user.workouts.id(req.params.workoutId))
+  res.send(user.workouts)
   user.save(function(err){
     if (err) return console.log('fuck')
     console.log('workout succesfully deleted!')
