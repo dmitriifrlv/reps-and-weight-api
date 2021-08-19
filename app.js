@@ -1,174 +1,240 @@
-require('dotenv').config()
-const express = require('express');
-const mongoose = require('mongoose')
-const User = require('./models/user')
-const cors = require('cors');
-const app = express()
-const jwt = require('jsonwebtoken')
+require("dotenv").config();
+const { createToken, hashPassword, verifyPassword } = require("./util");
+const express = require("express");
+const mongoose = require("mongoose");
+const User = require("./models/user");
+const cors = require("cors");
+const app = express();
+const jwt = require("jsonwebtoken");
+const jwtDecode = require("jwt-decode");
 
 app.use(cors());
-app.use(express.urlencoded({extended: true})); 
-app.use(express.json()); 
+app.use(express.urlencoded({ extended: true }));
+app.use(express.json());
 
-const dbURI = process.env.dbURI
-mongoose.connect(dbURI, { useNewUrlParser: true, useUnifiedTopology: true, useCreateIndex: true })
-  .then((result)=>{ 
+const dbURI = process.env.db_URL;
+mongoose
+  .connect(dbURI, {
+    useNewUrlParser: true,
+    useUnifiedTopology: true,
+    useCreateIndex: true,
+  })
+  .then((result) => {
     app.listen(process.env.PORT || 5000);
-    console.log('connected to db')
+    console.log("connected to db");
   })
-  .catch((err)=>console.log(err))
+  .catch((err) => console.log(err));
 
+app.get("/", (req, res) => {
+  res.send("hello there!");
+});
 
-  app.get('/', (req, res)=>{
-  res.send('hello there!')
-})
-
-app.get('/add-user', (req, res)=>{
+app.get("/add-user", (req, res) => {
   const user = new User({
-    email: 'test@gmail.com',
-    password: '123'
-  })
-  user.save()
-  .then((result)=>{
-    res.send(result)
-  })
-  .catch((err)=>{
-    console.log(err)
-  })
-})
+    email: "test@gmail.com",
+    password: "123",
+  });
+  user
+    .save()
+    .then((result) => {
+      res.send(result);
+    })
+    .catch((err) => {
+      console.log(err);
+    });
+});
 
-app.post('/signup', (req, res)=>{
-  const {email, password} = req.body
-  const user = new User({
-    email, password
-  })
-  console.log(user)
-  user.save()
-  .then((result)=>{
-    res.json(result)
-  })
-  .catch((err)=>{
-    console.log(err)
-  })
-})
-const jwtsecret = "secret"
-app.post('/login', async (req, res)=>{
-  const {email, password} = req.body
-  const user = await User.findOne({email:email})
-  if(user.password === password) {
-    res.json(
-      {
-        user,
-        token:jwt.sign({_id: user._id}, jwtsecret)
-      }
-    )
-  } else {
-    res.status(400).json('wrong password')
+app.post("/signup", async (req, res) => {
+  try {
+    const { email } = req.body;
+    const hashedPassword = await hashPassword(req.body.password);
+    const userData = {
+      email: email.toLowerCase(),
+      password: hashedPassword,
+    };
+    const existingEmail = await User.findOne({
+      email: userData.email,
+    }).lean();
+    if (existingEmail) {
+      return res.status(400).json({ message: "Email already exists" });
+    }
+    const newUser = new User(userData);
+    const savedUser = await newUser.save();
+
+    if (savedUser) {
+      const token = createToken(savedUser);
+      const decodedToken = jwtDecode(token);
+      const expiresAt = decodedToken.exp;
+      return res.json({
+        message: "User created!",
+        token,
+        expiresAt,
+        user: savedUser,
+      });
+    } else {
+      return res.status(400).json({
+        message: "There was a problem creating your account",
+      });
+    }
+  } catch (err) {
+    return res.status(400).json({
+      message: "There was a problem creating your account",
+    });
   }
-})
+});
 
+app.post("/login", async (req, res) => {
+  try {
+    const { email, password } = req.body;
+    const user = await User.findOne({ email }).lean();
+    if (!user) {
+      return res.status(400).json({ message: "Wrong password or email." });
+    }
+
+    const passwordCheck = await verifyPassword(password, user.password);
+
+    if (passwordCheck) {
+      const token = createToken(user);
+      const decodedToken = jwtDecode(token);
+      console.log(decodedToken);
+      const expiresAt = decodedToken.exp;
+      res.json({
+        message: "Authentication successful!",
+        token,
+        user,
+        expiresAt,
+      });
+    } else {
+      res.status(403).json({
+        message: "Wrong password or email.",
+      });
+    }
+  } catch (err) {
+    return res
+      .status(400)
+      .json({ message: "Something went wrong. Please try again." });
+  }
+});
 
 //List of all users
-app.get('/users', (req, res)=>{
+app.get("/users", (req, res) => {
   User.find()
-  .then((result=>res.send(result)))
-  .catch((err)=>console.log(err))
-})
+    .then((result) => res.send(result))
+    .catch((err) => console.log(err));
+});
 //Specific User
-app.get('/users/:userId', (req, res)=>{
+app.get("/users/:userId", (req, res) => {
   User.findById(req.params.userId)
-  .then((result)=>res.send(result))
-  .catch((err)=>{
-    console.log(err)
-  })
-})
+    .then((result) => res.send(result))
+    .catch((err) => {
+      console.log(err);
+    });
+});
 //Add a workout
-app.post('/users/:userId/', (req, res)=>{
-  User.updateOne({_id:req.params.userId}, {$push:{
-    workouts:req.body
-  }})
-  .then((result)=>res.send(result))
-  .catch((err)=>{
-    console.log(err)
-  })
-})
-
+app.post("/users/:userId/", (req, res) => {
+  User.updateOne(
+    { _id: req.params.userId },
+    {
+      $push: {
+        workouts: req.body,
+      },
+    }
+  )
+    .then((result) => res.send(result))
+    .catch((err) => {
+      console.log(err);
+    });
+});
 
 //List of workouts of a specific user
 
-app.get('/users/:userId/workouts', async (req, res)=>{
-  const user = await User.findById(req.params.userId)
-  const workouts= await user.workouts
-  res.send(workouts)
-})
-
+app.get("/users/:userId/workouts", async (req, res) => {
+  const user = await User.findById(req.params.userId);
+  const workouts = await user.workouts;
+  res.send(workouts);
+});
 
 //Get a specific workout
-app.get('/users/:userId/workouts/:workoutId',async (req, res)=>{
-  const user = await User.findById(req.params.userId)
-  const workout = await user.workouts.id(req.params.workoutId)
-  res.send(workout)
-})
-
+app.get("/users/:userId/workouts/:workoutId", async (req, res) => {
+  const user = await User.findById(req.params.userId);
+  const workout = await user.workouts.id(req.params.workoutId);
+  res.send(workout);
+});
 
 //Find all exercises
-app.get('/users/:userId/workouts/:workoutId/exercise',async (req, res)=>{
-  const user = await User.findById(req.params.userId)
-  const exercises = await user.workouts.id(req.params.workoutId).exercise
-  res.send(exercises)
-})
+app.get("/users/:userId/workouts/:workoutId/exercise", async (req, res) => {
+  const user = await User.findById(req.params.userId);
+  const exercises = await user.workouts.id(req.params.workoutId).exercise;
+  res.send(exercises);
+});
 
 //Find a specific exercise
-app.get('/users/:userId/workouts/:workoutId/exercise/:exerciseId',async (req, res)=>{
-  const user = await User.findById(req.params.userId)
-  const exercises = await user.workouts.id(req.params.workoutId).exercise.id(req.params.exerciseId)
-  res.send(exercises)
-})
+app.get(
+  "/users/:userId/workouts/:workoutId/exercise/:exerciseId",
+  async (req, res) => {
+    const user = await User.findById(req.params.userId);
+    const exercises = await user.workouts
+      .id(req.params.workoutId)
+      .exercise.id(req.params.exerciseId);
+    res.send(exercises);
+  }
+);
 
 //Find a specific exercise
-app.get('/users/:userId/workouts/:workoutId/exercise/:exerciseId',async (req, res)=>{
-  const user = await User.findById(req.params.userId)
-  const exercises = await user.workouts.id(req.params.workoutId).exercise.id(req.params.exerciseId).exercise
-  res.send(exercises)
-})
+app.get(
+  "/users/:userId/workouts/:workoutId/exercise/:exerciseId",
+  async (req, res) => {
+    const user = await User.findById(req.params.userId);
+    const exercises = await user.workouts
+      .id(req.params.workoutId)
+      .exercise.id(req.params.exerciseId).exercise;
+    res.send(exercises);
+  }
+);
 
 //Add an exercise
-app.post('/users/:userId/workouts/:workoutId', async (req, res)=>{
-  const user = await User.findById(req.params.userId)
-  const workout = await user.workouts.id(req.params.workoutId)
-  workout.exercise.push(req.body)
-  user.save(function(err){
-    if (err) return console.log('fuck')
-    console.log('exercise succesfully added!')
-  })
-})
+app.post("/users/:userId/workouts/:workoutId", async (req, res) => {
+  const user = await User.findById(req.params.userId);
+  const workout = await user.workouts.id(req.params.workoutId);
+  workout.exercise.push(req.body);
+  user.save(function (err) {
+    if (err) return console.log("fuck");
+    console.log("exercise succesfully added!");
+  });
+});
 
 //delete a workout
-app.delete('/users/:userId/workouts/:workoutId', async (req, res)=>{
-  const user = await User.findById(req.params.userId)
-  user.workouts.id(req.params.workoutId).remove()
-  console.log(user.workouts.id(req.params.workoutId))
-  user.save(function(err){
-    if (err) return console.log('fuck')
-    console.log('workout succesfully deleted!')
-  })
-  res.send(user)
-})
+app.delete("/users/:userId/workouts/:workoutId", async (req, res) => {
+  const user = await User.findById(req.params.userId);
+  user.workouts.id(req.params.workoutId).remove();
+  console.log(user.workouts.id(req.params.workoutId));
+  user.save(function (err) {
+    if (err) return console.log("fuck");
+    console.log("workout succesfully deleted!");
+  });
+  res.send(user);
+});
 //delete an exercise
-app.delete('/users/:userId/workouts/:workoutId/exercise/:exerciseId', async (req, res)=>{
-  const user = await User.findById(req.params.userId)
-  const workout = await user.workouts.id(req.params.workoutId)
-  workout.exercise.id(req.params.exerciseId).remove()
-  user.save(function(err){
-    if (err) return console.log('fuck')
-    console.log('exercise succesfully deleted!')
-  })
-})
+app.delete(
+  "/users/:userId/workouts/:workoutId/exercise/:exerciseId",
+  async (req, res) => {
+    const user = await User.findById(req.params.userId);
+    const workout = await user.workouts.id(req.params.workoutId);
+    workout.exercise.id(req.params.exerciseId).remove();
+    user.save(function (err) {
+      if (err) return console.log("fuck");
+      console.log("exercise succesfully deleted!");
+    });
+  }
+);
 
 //update a workout
-app.patch('/users/:userId/workouts/:workoutId', async (req, res)=>{
-  const updatedWorkout = await User.findOneAndUpdate({ 'workouts._id':req.params.workoutId}, req.body)
-  res.send(updatedWorkout)
-})
+app.patch("/users/:userId/workouts/:workoutId", async (req, res) => {
+  const updatedWorkout = await User.findOneAndUpdate(
+    { "workouts._id": req.params.workoutId },
+    req.body
+  );
+  res.send(updatedWorkout);
+});
 
 // https://stackoverflow.com/questions/21522112/how-to-update-subdocument-with-findoneandupdate
