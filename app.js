@@ -26,7 +26,7 @@ mongoose
   .catch((err) => console.log(err));
 
 app.get("/", (req, res) => {
-  res.send("hello there!");
+  res.send("hello!");
 });
 
 app.get("/add-user", (req, res) => {
