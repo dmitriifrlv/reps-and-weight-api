@@ -46,6 +46,7 @@ app.get("/add-user", (req, res) => {
 
 app.post("/signup", async (req, res) => {
   try {
+    console.log("zz");
     const { email } = req.body;
     const hashedPassword = await hashPassword(req.body.password);
     const userData = {
@@ -56,7 +57,8 @@ app.post("/signup", async (req, res) => {
       email: userData.email,
     }).lean();
     if (existingEmail) {
-      return res.status(400).json({ message: "Email already exists" });
+      console.log("aha!");
+      return res.status(500).json({ message: "Email already exists" });
     }
     const newUser = new User(userData);
     const savedUser = await newUser.save();
