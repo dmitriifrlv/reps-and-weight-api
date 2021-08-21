@@ -211,14 +211,19 @@ app.post("/users/:userId/workouts/:workoutId", async (req, res) => {
 
 //delete a workout
 app.delete("/users/:userId/workouts/:workoutId", async (req, res) => {
-  const user = await User.findById(req.params.userId);
-  user.workouts.id(req.params.workoutId).remove();
-  console.log(user.workouts.id(req.params.workoutId));
-  user.save(function (err) {
-    if (err) return console.log("fuck");
-    console.log("workout succesfully deleted!");
-  });
-  res.send(user);
+  try {
+    const user = await User.findById(req.params.userId);
+    user.workouts.id(req.params.workoutId).remove();
+    console.log(user.workouts.id(req.params.workoutId));
+    user.save();
+    res.status(201).json({
+      message: "Workout deleted!",
+    });
+  } catch (err) {
+    return res.status(400).json({
+      message: "There was a problem deleting the workout.",
+    });
+  }
 });
 //delete an exercise
 app.delete(
@@ -230,11 +235,11 @@ app.delete(
       workout.exercise.id(req.params.exerciseId).remove();
       user.save();
       res.status(201).json({
-        message: "Workout deleted!",
+        message: "Exercise deleted!",
       });
     } catch (err) {
       return res.status(400).json({
-        message: "There was a problem deleting the workout.",
+        message: "There was a problem deleting the exercise.",
       });
     }
   }
