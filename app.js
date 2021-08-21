@@ -148,7 +148,7 @@ app.post("/users/:userId/", async (req, res) => {
     console.log(result);
     res.json({ message: "Workout added" });
   } catch (err) {
-    return res.status(400).json({ error: err });
+    return res.status(400).json({ error: err?.name });
   }
 });
 
