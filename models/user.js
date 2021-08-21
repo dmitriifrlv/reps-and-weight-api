@@ -21,7 +21,10 @@ const workoutSchema = new Schema({
     type: Date,
     required: true,
   },
-  muscleGroups: [],
+  muscleGroups: {
+    type: Array,
+    required: true,
+  },
   exercises: [exerciseSchema],
 });
 
