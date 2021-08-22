@@ -19,13 +19,17 @@ const exerciseSchema = new Schema({
 const workoutSchema = new Schema({
   date: {
     type: Date,
-    required: true,
+    // required: true,
   },
   muscleGroups: {
     type: Array,
-    required: true,
+    // required: true,
   },
-  exercises: [exerciseSchema],
+  exercises: {
+    type: [exerciseSchema],
+    default: () => [],
+    // required: true,
+  },
 });
 
 const userSchema = new Schema(
@@ -39,7 +43,11 @@ const userSchema = new Schema(
       type: String,
       required: true,
     },
-    workouts: [workoutSchema],
+    workouts: {
+      type: [workoutSchema],
+      default: () => [],
+      // required: true,
+    },
   },
   { timestamps: true }
 );

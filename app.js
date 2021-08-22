@@ -214,7 +214,7 @@ app.delete("/users/:userId/workouts/:workoutId", async (req, res) => {
   try {
     const user = await User.findById(req.params.userId);
     user.workouts.id(req.params.workoutId).remove();
-    console.log(user.workouts.id(req.params.workoutId));
+    // console.log(user.workouts.id(req.params.workoutId));
     user.save();
     res.status(201).json({
       message: "Workout deleted!",
