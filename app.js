@@ -252,10 +252,12 @@ app.put("/users/:userId/workouts/:workoutId", async (req, res) => {
     );
     user.workouts.splice(idx, 1, req.body);
     user.save();
-    res.status(201);
+    res.status(201).json({
+      message: "Workout edited!",
+    });
   } catch (err) {
     return res.status(400).json({
-      message: "There was a problem updating the exercise.",
+      message: "There was a problem editing the exercise.",
     });
   }
 });
