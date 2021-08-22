@@ -19,16 +19,16 @@ const exerciseSchema = new Schema({
 const workoutSchema = new Schema({
   date: {
     type: Date,
-    // required: true,
+    required: true,
   },
   muscleGroups: {
     type: Array,
-    // required: true,
+    required: true,
   },
   exercises: {
     type: [exerciseSchema],
     default: () => [],
-    // required: true,
+    required: true,
   },
 });
 
@@ -45,8 +45,7 @@ const userSchema = new Schema(
     },
     workouts: {
       type: [workoutSchema],
-      default: () => [],
-      // required: true,
+      required: true,
     },
   },
   { timestamps: true }

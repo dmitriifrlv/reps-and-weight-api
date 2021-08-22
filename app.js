@@ -135,7 +135,6 @@ app.get("/users/:userId", (req, res) => {
 //Add a workout
 app.post("/users/:userId/", async (req, res) => {
   try {
-    console.log(req.body);
     const result = await User.updateOne(
       { _id: req.params.userId },
       {
@@ -145,7 +144,6 @@ app.post("/users/:userId/", async (req, res) => {
       },
       { runValidators: true }
     );
-    console.log(result);
     res.json({ message: "Workout added" });
   } catch (err) {
     return res.status(400).json({ error: err?.name });
