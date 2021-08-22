@@ -245,13 +245,19 @@ app.delete(
 
 //update a workout
 app.put("/users/:userId/workouts/:workoutId", async (req, res) => {
-  const user = await User.findById(req.params.userId);
-  const idx = await user.workouts.findIndex(
-    (i) => i.id === req.params.workoutId
-  );
-  user.workouts.splice(idx, 1, req.body);
-  user.save();
-  res.send(user);
+  try {
+    const user = await User.findById(req.params.userId);
+    const idx = await user.workouts.findIndex(
+      (i) => i.id === req.params.workoutId
+    );
+    user.workouts.splice(idx, 1, req.body);
+    user.save();
+    res.status(201);
+  } catch (err) {
+    return res.status(400).json({
+      message: "There was a problem updating the exercise.",
+    });
+  }
 });
 
 // https://stackoverflow.com/questions/21522112/how-to-update-subdocument-with-findoneandupdate
