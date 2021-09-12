@@ -12,6 +12,7 @@ const checkJwt = jwt({
   secret: process.env.JWT_SECRET,
   iss: "api.reps-and-weigh",
   aud: "api.reps-and-weigh",
+  algorithms: ["HS256"],
 });
 
 app.use(cors());
@@ -37,7 +38,6 @@ app.get("/", (req, res) => {
 
 app.post("/signup", async (req, res) => {
   try {
-    console.log("zz");
     const { email } = req.body;
     const hashedPassword = await hashPassword(req.body.password);
     const userData = {
