@@ -5,7 +5,7 @@ const mongoose = require("mongoose");
 const User = require("./models/user");
 const cors = require("cors");
 const app = express();
-const jwt = require("jsonwebtoken");
+
 const jwtDecode = require("jwt-decode");
 
 app.use(cors());
@@ -27,21 +27,6 @@ mongoose
 
 app.get("/", (req, res) => {
   res.send("hello!");
-});
-
-app.get("/add-user", (req, res) => {
-  const user = new User({
-    email: "test@gmail.com",
-    password: "123",
-  });
-  user
-    .save()
-    .then((result) => {
-      res.send(result);
-    })
-    .catch((err) => {
-      console.log(err);
-    });
 });
 
 app.post("/signup", async (req, res) => {
