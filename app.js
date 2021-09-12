@@ -5,8 +5,14 @@ const mongoose = require("mongoose");
 const User = require("./models/user");
 const cors = require("cors");
 const app = express();
+const jwt = require("express-jwt");
 
 const jwtDecode = require("jwt-decode");
+const checkJwt = jwt({
+  secret: process.env.JWT_SECRET,
+  iss: "api.reps-and-weigh",
+  aud: "api.reps-and-weigh",
+});
 
 app.use(cors());
 app.use(express.urlencoded({ extended: true }));
@@ -102,6 +108,9 @@ app.post("/login", async (req, res) => {
       .json({ message: "Something went wrong. Please try again." });
   }
 });
+
+//in order to check for jwt I can either use middleware like below or add a swcond argument checkJwt to every endpoint
+app.use(checkJwt);
 
 //List of all users
 app.get("/users", (req, res) => {
