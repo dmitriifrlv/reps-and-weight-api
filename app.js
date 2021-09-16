@@ -6,6 +6,7 @@ const User = require("./models/user");
 const cors = require("cors");
 const app = express();
 const jwt = require("express-jwt");
+const cookieParser = require("cookie-parser");
 
 const jwtDecode = require("jwt-decode");
 const checkJwt = jwt({
@@ -13,11 +14,13 @@ const checkJwt = jwt({
   iss: "api.reps-and-weigh",
   aud: "api.reps-and-weigh",
   algorithms: ["HS256"],
+  getToken: (req) => req.cookies.token,
 });
 
 app.use(cors());
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
+app.use(cookieParser());
 
 const dbURI = process.env.db_URL;
 mongoose
@@ -48,7 +51,6 @@ app.post("/signup", async (req, res) => {
       email: userData.email,
     }).lean();
     if (existingEmail) {
-      console.log("aha!");
       return res.status(500).json({ message: "Email already exists" });
     }
     const newUser = new User(userData);
@@ -85,15 +87,16 @@ app.post("/login", async (req, res) => {
     }
 
     const passwordCheck = await verifyPassword(password, user.password);
-
     if (passwordCheck) {
       const token = createToken(user);
       const decodedToken = jwtDecode(token);
-      console.log(decodedToken);
       const expiresAt = decodedToken.exp;
+
+      res.cookie("token", token, { httpOnly: true });
+
       res.json({
         message: "Authentication successful!",
-        token,
+        // token,
         user,
         expiresAt,
       });
@@ -196,7 +199,7 @@ app.post("/users/:userId/workouts/:workoutId", async (req, res) => {
   const workout = await user.workouts.id(req.params.workoutId);
   workout.exercise.push(req.body);
   user.save(function (err) {
-    if (err) return console.log("fuck");
+    if (err) return;
     console.log("exercise succesfully added!");
   });
 });
@@ -206,7 +209,6 @@ app.delete("/users/:userId/workouts/:workoutId", async (req, res) => {
   try {
     const user = await User.findById(req.params.userId);
     user.workouts.id(req.params.workoutId).remove();
-    // console.log(user.workouts.id(req.params.workoutId));
     user.save();
     res.status(201).json({
       message: "Workout deleted!",
