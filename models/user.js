@@ -4,31 +4,30 @@ const { Schema } = mongoose;
 const exerciseSchema = new Schema({
   exercise: {
     type: String,
-    required: true,
+    // required: true,
   },
   sets: {
     type: Array,
-    required: true,
+    // required: true,
   },
   measure: {
     type: String,
-    required: true,
   },
 });
 
 const workoutSchema = new Schema({
   date: {
     type: Date,
-    required: true,
+    // required: true,
   },
   muscleGroups: {
     type: Array,
-    required: true,
+    // required: true,
   },
   exercises: {
     type: [exerciseSchema],
     default: () => [],
-    required: true,
+    // required: true,
   },
 });
 
@@ -37,15 +36,15 @@ const userSchema = new Schema(
     email: {
       type: String,
       unique: true,
-      required: true,
+      // required: true,
     },
     password: {
       type: String,
-      required: true,
+      // required: true,
     },
     workouts: {
       type: [workoutSchema],
-      required: true,
+      // required: true,
     },
   },
   { timestamps: true }
