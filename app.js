@@ -9,12 +9,12 @@ const jwt = require("express-jwt");
 const cookieParser = require("cookie-parser");
 
 const jwtDecode = require("jwt-decode");
+
 const checkJwt = jwt({
   secret: process.env.JWT_SECRET,
   iss: "api.reps-and-weigh",
   aud: "api.reps-and-weigh",
   algorithms: ["HS256"],
-  getToken: (req) => req.cookies.token,
 });
 
 app.use(cors());
@@ -87,12 +87,11 @@ app.post("/login", async (req, res) => {
       const decodedToken = jwtDecode(token);
       const expiresAt = decodedToken.exp;
 
-      res.cookie("token", token, { httpOnly: true });
-
       res.json({
         message: "Authentication successful!",
         user,
         expiresAt,
+        token,
       });
     } else {
       res.status(403).json({
@@ -107,12 +106,12 @@ app.post("/login", async (req, res) => {
 });
 
 const attachUser = (req, res, next) => {
-  const token = req.cookies.token;
+  const token = req.headers.authorization;
   if (!token) {
     return res.status(401).json({ message: "Authentication invalid" });
   }
 
-  const decodedToken = jwtDecode(token);
+  const decodedToken = jwtDecode(token.slice(7));
 
   if (!decodedToken) {
     return res.status(401).json({
@@ -124,10 +123,10 @@ const attachUser = (req, res, next) => {
   }
 };
 
+app.use(checkJwt);
 app.use(attachUser);
 
-//in order to check for jwt I can either use middleware like below or add a swcond argument checkJwt to every endpoint
-// app.use(checkJwt);
+//in order to check for jwt I can either use middleware like below or add a second argument checkJwt to every endpoint
 
 //List of all users
 app.get("/users", (req, res) => {
