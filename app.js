@@ -7,7 +7,8 @@ const cors = require("cors");
 const app = express();
 const jwt = require("express-jwt");
 const cookieParser = require("cookie-parser");
-
+const sendEmail = require("./utils/email");
+const crypto = require("crypto");
 const jwtDecode = require("jwt-decode");
 
 const checkJwt = jwt({
@@ -35,6 +36,67 @@ mongoose
   })
   .catch((err) => console.log("err", err));
 
+app.post("/forgotPassword", async (req, res) => {
+  const email = req.body.email.toLowerCase();
+  const user = await User.findOne({ email });
+  if (!user) {
+    return res.status(400).json({
+      message: "There is no user with this email",
+    });
+  }
+
+  const resetToken = user.createPasswordResetToken();
+  await user.save({ validateBeforeSave: false });
+  const url =
+    process.env.NODE_ENV === "development"
+      ? process.env.CLIENT_URL_DEVELOPMENT
+      : process.env.CLIENT_URL_PRODUCTION;
+
+  const resetLink = `${url}create-new-password/${resetToken}`;
+  const message = `<p>Forgot your password? Happens all the time! <a href=${resetLink}>Click here</a> to set a new one. The link will expire in 10 minutes.</p> <p>If you didn't forget your password, please ignore this email.</p>`;
+  try {
+    await sendEmail({
+      email,
+      subject: "Your password reset link",
+      message,
+    });
+    return res.status(200).json({
+      message: "Message has been successfully sent!!!!!",
+    });
+  } catch (err) {
+    user.passwordResetToken = undefined;
+    user.passwordresetExpires = undefined;
+    await user.save({ validateBeforeSave: false });
+    return res.status(500).json({
+      message: "There was an error sending the email. try again later!",
+    });
+  }
+});
+
+app.patch("/resetPassword/:token", async (req, res) => {
+  const hashedToken = crypto
+    .createHash("sha256")
+    .update(req.params.token)
+    .digest("hex");
+
+  const user = await User.findOne({
+    passwordResetToken: hashedToken,
+    passwordResetExpires: { $gt: Date.now() },
+  });
+  if (!user) {
+    return res.status(400).json({ message: "Token is invalid or has expired" });
+  }
+  const hashedPassword = await hashPassword(req.body.password);
+  user.password = hashedPassword;
+  user.passwordResetToken = undefined;
+  user.passwordResetExpires = undefined;
+  await user.save();
+
+  res.status(200).json({
+    message: "Your password has been succesfully changed!",
+  });
+});
+
 app.post("/signup", async (req, res) => {
   try {
     const { email } = req.body;
@@ -51,8 +113,8 @@ app.post("/signup", async (req, res) => {
     }
     const newUser = new User(userData);
     const savedUser = await newUser.save();
-
     if (savedUser) {
+      sendVerificationEmail(savedUser);
       const token = createToken(savedUser);
       const decodedToken = jwtDecode(token);
       const expiresAt = decodedToken.exp;
@@ -64,12 +126,12 @@ app.post("/signup", async (req, res) => {
       });
     } else {
       return res.status(400).json({
-        message: "There was a problem creating your account",
+        message: "Internal errr.There was a problem creating your account",
       });
     }
   } catch (err) {
     return res.status(400).json({
-      message: "There was a problem creating your account",
+      message: "External error.There was a problem creating your account",
     });
   }
 });
