@@ -114,7 +114,6 @@ app.post("/signup", async (req, res) => {
     const newUser = new User(userData);
     const savedUser = await newUser.save();
     if (savedUser) {
-      sendVerificationEmail(savedUser);
       const token = createToken(savedUser);
       const decodedToken = jwtDecode(token);
       const expiresAt = decodedToken.exp;
