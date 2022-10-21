@@ -14,6 +14,7 @@ const exerciseSchema = new Schema({
   measure: {
     type: String,
   },
+  isCompleted: Boolean,
 });
 
 const workoutSchema = new Schema({
@@ -30,6 +31,23 @@ const workoutSchema = new Schema({
     default: () => [],
     // required: true,
   },
+  isCompleted: Boolean,
+  weekday: string,
+  workoutPlanId: string,
+});
+
+const workoutPlanSchema = new Schema({
+  title: String,
+  schedule: {
+    mon: Boolean,
+    tue: Boolean,
+    wed: Boolean,
+    thu: Boolean,
+    fri: Boolean,
+    sat: Boolean,
+    sun: Boolean,
+  },
+  workouts: [workoutSchema],
 });
 
 const userSchema = new Schema(
@@ -37,18 +55,17 @@ const userSchema = new Schema(
     email: {
       type: String,
       unique: true,
-      // required: true,
     },
     password: {
       type: String,
-      // required: true,
     },
     workouts: {
       type: [workoutSchema],
-      // required: true,
     },
     passwordResetToken: String,
     passwordResetExpires: Date,
+    currentPlanId: String,
+    workoutPlans: [workoutPlanSchema],
   },
   { timestamps: true }
 );
